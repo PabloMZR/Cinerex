@@ -53,7 +53,7 @@ export class FunctionController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a function' })
+  @ApiOperation({ summary: 'Delete function' })
   @ApiResponse({ status: 200, description: 'The function has been successfully deleted.' })
   @ApiResponse({ status: 404, description: 'Function not found.' })
   remove(@Param('id', IdValidationPipe) id: string): Promise<void> {
