@@ -27,6 +27,7 @@ import { FunctionModule } from './function/function.module';
   AuthModule, 
   SeederModule, FunctionModule
   ],
+  controllers: [],
   providers: []
 })
 export class AppModule {}
