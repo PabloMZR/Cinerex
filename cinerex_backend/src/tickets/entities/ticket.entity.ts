@@ -36,6 +36,6 @@ export class Ticket {
         description: 'Total price of the ticket',
         example: 25.50
     })
-    @Column({ type: 'decimal', precision: 6, scale: 2})
+    @Column({ type: 'decimal', precision: 8, scale: 2})
     total : number;
 }

@@ -17,7 +17,7 @@ async function bootstrap() {
     whitelist: true
   }));
 
-  // configuracion de swagger
+  // Configuracion de swagger
   const config = new DocumentBuilder()
     .setTitle('Cinerex API')
     .setDescription('The Cinerex API documentation')

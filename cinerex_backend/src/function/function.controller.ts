@@ -60,3 +60,5 @@ export class FunctionController {
     return this.functionService.remove(+id);
   }
 }
+
+
