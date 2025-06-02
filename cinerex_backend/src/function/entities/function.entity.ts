@@ -1,8 +1,9 @@
 // comentario
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Movie } from '../../movies/entities/movie.entity';
 import { CinemaRoom } from '../../cinema-room/entities/cinema-room.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { FunctionSeat } from './function-seat.entity';
 
 @Entity()
 export class Function {
@@ -72,4 +73,13 @@ export class Function {
   })
   @Column({ default: 'active' })
   status: string;
+
+  @ApiProperty({
+    description: 'Seats associated with this function',
+    type: () => [FunctionSeat]
+  })
+  @OneToMany(() => FunctionSeat, functionSeat => functionSeat.function, {
+    cascade: true
+  })
+  functionSeats: FunctionSeat[];
 }

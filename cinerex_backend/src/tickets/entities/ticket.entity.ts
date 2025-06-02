@@ -1,5 +1,5 @@
 import { Function } from "src/function/entities/function.entity";
-import { Seat } from "src/seats/entities/seat.entity";
+import { FunctionSeat } from "src/function/entities/function-seat.entity";
 import { Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
 
@@ -21,21 +21,28 @@ export class Ticket {
     function: Function;
     
     @ApiProperty({
-        description: 'The seats associated with this ticket',
-        type: () => [Seat]
+        description: 'The function seats associated with this ticket',
+        type: () => [FunctionSeat]
     })
-    @ManyToMany(() => Seat, {eager: true})
+    @ManyToMany(() => FunctionSeat, {eager: true})
     @JoinTable({
-        name: 'ticket_seats',
+        name: 'ticket_function_seats',
         joinColumn: { name: 'ticket_id', referencedColumnName: 'id'},
-        inverseJoinColumn: { name: 'seat_id', referencedColumnName: 'id'}
+        inverseJoinColumn: { name: 'function_seat_id', referencedColumnName: 'id'}
     })
-    seats : Seat[];
+    functionSeats: FunctionSeat[];
 
     @ApiProperty({
         description: 'Total price of the ticket',
         example: 25.50
     })
     @Column({ type: 'decimal', precision: 8, scale: 2})
-    total : number;
+    total: number;
+
+    @ApiProperty({
+        description: 'Creation date of the ticket',
+        example: '2024-01-01T20:00:00Z'
+    })
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+    createdAt: Date;
 }

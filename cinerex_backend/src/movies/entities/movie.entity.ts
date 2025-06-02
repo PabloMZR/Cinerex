@@ -1,6 +1,6 @@
-import { CinemaRoom } from "../../cinema-room/entities/cinema-room.entity";
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger";
+import { Function } from "../../function/entities/function.entity";
 
 @Entity()
 export class Movie {
@@ -37,35 +37,17 @@ export class Movie {
     duration: number;
 
     @ApiProperty({
-        description: 'Start time of the movie',
-        example: '2024-01-01T20:00:00Z'
-    })
-    @Column({ type: 'timestamp', nullable: false })
-    startTime: Date; 
-
-    @ApiProperty({
-        description: 'ID of the cinema room where the movie will be shown',
-        example: 1
-    })
-    @Column()
-    cinemaRoomId: number
-
-    @ApiProperty({
-        description: 'The cinema room where the movie will be shown',
-        type: () => CinemaRoom
-    })
-    @ManyToOne(() => CinemaRoom, (cinemaRoom) => cinemaRoom.movies, {
-        eager: false
-        //onDelete: 'CASCADE'
-    })
-    @JoinColumn({name: 'cinemaRoomId'})
-    cinemaRoom: CinemaRoom;
-
-    @ApiProperty({
         description: 'URL of the movie poster image',
         example: '/uploads/movies/poster.jpg',
         required: false
     })
-    @Column({ type: 'text', nullable: true }) // URL de la imagen de portada (puede ser null)
+    @Column({ type: 'text', nullable: true })
     posterUrl?: string;
+
+    @ApiProperty({
+        description: 'Functions where this movie is shown',
+        type: () => [Function]
+    })
+    @OneToMany(() => Function, (func) => func.movie)
+    functions: Function[];
 }

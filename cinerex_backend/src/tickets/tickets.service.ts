@@ -1,61 +1,123 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateTicketDto } from './dto/create-ticket.dto';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreateTicketDto } from './dto/create-ticket.dto';
+import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { Ticket } from './entities/ticket.entity';
-import { Repository, In } from 'typeorm';
-import { Seat } from '../seats/entities/seat.entity';
 import { Function } from '../function/entities/function.entity';
+import { FunctionSeat } from '../function/entities/function-seat.entity';
+import { SeatStatus } from '../function/entities/function-seat.entity';
 
 @Injectable()
 export class TicketsService {
   constructor(
-    @InjectRepository(Ticket) 
+    @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
-    @InjectRepository(Seat) 
-    private readonly seatRepository: Repository<Seat>,
     @InjectRepository(Function)
-    private readonly functionRepository: Repository<Function>
+    private readonly functionRepository: Repository<Function>,
+    @InjectRepository(FunctionSeat)
+    private readonly functionSeatRepository: Repository<FunctionSeat>,
   ) {}
 
-  async create(createTicketDto: CreateTicketDto): Promise<Ticket> {
-    const func = await this.functionRepository.findOneBy({ id: createTicketDto.functionId });
-    if (!func) throw new NotFoundException('Function not found');
-    
-    const seats = await this.seatRepository.findBy({ id: In(createTicketDto.seatIds) });
-    if (seats.length !== createTicketDto.seatIds.length) {
-      throw new BadRequestException('Some seat IDs are invalid');
-    }
-
-    // Verificar que los asientos pertenezcan a la sala de la función
-    const invalidSeats = seats.filter(seat => seat.cinemaRoom.id !== func.cinemaRoom.id);
-    if (invalidSeats.length > 0) {
-      throw new BadRequestException('Some seats do not belong to the function\'s cinema room');
-    }
-
-    const ticket = this.ticketRepository.create({
-      function: func,
-      seats,
-      total: createTicketDto.total
+  async create(createTicketDto: CreateTicketDto) {
+    const function_ = await this.functionRepository.findOne({
+      where: { id: createTicketDto.functionId },
+      relations: ['functionSeats', 'functionSeats.seat'],
     });
+
+    if (!function_) {
+      throw new NotFoundException('Function not found');
+    }
+
+    // Verify all seats exist and are available
+    const functionSeats = await Promise.all(
+      createTicketDto.functionSeatIds.map(async (seatId) => {
+        const functionSeat = await this.functionSeatRepository.findOne({
+          where: { id: seatId, function: { id: function_.id } },
+          relations: ['seat'],
+        });
+
+        if (!functionSeat) {
+          throw new NotFoundException(`Function seat ${seatId} not found`);
+        }
+
+        if (functionSeat.status !== SeatStatus.AVAILABLE) {
+          throw new BadRequestException(`Seat ${functionSeat.seat.row}-${functionSeat.seat.column} is not available`);
+        }
+
+        return functionSeat;
+      })
+    );
+
+    // Calculate total price
+    const total = function_.price * functionSeats.length;
+
+    // Create ticket
+    const ticket = this.ticketRepository.create({
+      function: function_,
+      functionSeats,
+      total,
+    });
+
+    // Update seat status to occupied
+    await Promise.all(
+      functionSeats.map(async (functionSeat) => {
+        functionSeat.status = SeatStatus.OCCUPIED;
+        await this.functionSeatRepository.save(functionSeat);
+      })
+    );
 
     return this.ticketRepository.save(ticket);
   }
 
-  findAll(): Promise<Ticket[]> {
+  async findAll() {
     return this.ticketRepository.find({
-      relations: ['function', 'function.movie', 'function.cinemaRoom', 'seats']
+      relations: [
+        'function',
+        'function.movie',
+        'function.cinemaRoom',
+        'functionSeats',
+        'functionSeats.seat'
+      ],
     });
   }
 
-  findOne(id: number) {
-    return this.ticketRepository.findOne({
+  async findOne(id: number) {
+    const ticket = await this.ticketRepository.findOne({
       where: { id },
-      relations: ['function', 'function.movie', 'function.cinemaRoom', 'seats']
+      relations: [
+        'function',
+        'function.movie',
+        'function.cinemaRoom',
+        'functionSeats',
+        'functionSeats.seat'
+      ],
     });
+
+    if (!ticket) {
+      throw new NotFoundException(`Ticket with ID ${id} not found`);
+    }
+
+    return ticket;
+  }
+
+  async update(id: number, updateTicketDto: UpdateTicketDto) {
+    const ticket = await this.findOne(id);
+    Object.assign(ticket, updateTicketDto);
+    return this.ticketRepository.save(ticket);
   }
 
   async remove(id: number) {
-    await this.ticketRepository.delete(id);
-    return "Ticket eliminated";
+    const ticket = await this.findOne(id);
+    
+    // Release seats
+    await Promise.all(
+      ticket.functionSeats.map(async (functionSeat) => {
+        functionSeat.status = SeatStatus.AVAILABLE;
+        await this.functionSeatRepository.save(functionSeat);
+      })
+    );
+
+    await this.ticketRepository.remove(ticket);
   }
 }

@@ -6,6 +6,8 @@ import { UpdateFunctionDto } from './dto/update-function.dto';
 import { Function } from './entities/function.entity';
 import { Movie } from '../movies/entities/movie.entity';
 import { CinemaRoom } from '../cinema-room/entities/cinema-room.entity';
+import { FunctionSeat } from './entities/function-seat.entity';
+import { Seat } from '../seats/entities/seat.entity';
 
 @Injectable()
 export class FunctionService {
@@ -16,22 +18,31 @@ export class FunctionService {
     private readonly movieRepository: Repository<Movie>,
     @InjectRepository(CinemaRoom)
     private readonly cinemaRoomRepository: Repository<CinemaRoom>,
+    @InjectRepository(FunctionSeat)
+    private readonly functionSeatRepository: Repository<FunctionSeat>,
+    @InjectRepository(Seat)
+    private readonly seatRepository: Repository<Seat>,
   ) {}
 
   async create(createFunctionDto: CreateFunctionDto): Promise<Function> {
     const { movieId, cinemaRoomId, startTime, endTime, price } = createFunctionDto;
 
     // Verificar que la película existe
-    const movie = await this.movieRepository.findOneBy({ id: movieId });
+    const movie = await this.movieRepository.findOne({
+      where: { id: movieId }
+    });
     if (!movie) {
       throw new NotFoundException('Movie not found');
     }
 
-    // Verificar que la sala existe
-    const cinemaRoom = await this.cinemaRoomRepository.findOneBy({ id: cinemaRoomId });
+    // Verificar que la sala existe y cargar sus asientos
+    const cinemaRoom = await this.cinemaRoomRepository.findOne({
+      where: { id: cinemaRoomId },
+      relations: ['seats']
+    });
     if (!cinemaRoom) {
       throw new NotFoundException('Cinema room not found');
-  }
+    }
 
     // Verificar que no haya otra función en la misma sala en el mismo horario
     const startDate = new Date(startTime);
@@ -49,7 +60,8 @@ export class FunctionService {
       throw new BadRequestException('There is already a function scheduled at this time in this cinema room');
     }
 
-    const func = this.functionRepository.create({
+    // Crear la función
+    const function_ = this.functionRepository.create({
       movie,
       cinemaRoom,
       startTime: startDate,
@@ -58,12 +70,25 @@ export class FunctionService {
       status: 'active'
     });
 
-    return this.functionRepository.save(func);
+    await this.functionRepository.save(function_);
+
+    // Crear los asientos de la función
+    const functionSeats = cinemaRoom.seats.map(seat => {
+      return this.functionSeatRepository.create({
+        function: function_,
+        seat: seat,
+      });
+    });
+
+    await this.functionSeatRepository.save(functionSeats);
+
+    // Retornar la función con todos sus datos
+    return this.findOne(function_.id);
   }
 
   async findAll(): Promise<Function[]> {
     return this.functionRepository.find({
-      relations: ['movie', 'cinemaRoom'],
+      relations: ['movie', 'cinemaRoom', 'functionSeats', 'functionSeats.seat'],
       order: {
         startTime: 'ASC'
       }
@@ -71,52 +96,74 @@ export class FunctionService {
   }
 
   async findOne(id: number): Promise<Function> {
-    const func = await this.functionRepository.findOne({
+    const function_ = await this.functionRepository.findOne({
       where: { id },
-      relations: ['movie', 'cinemaRoom']
+      relations: ['movie', 'cinemaRoom', 'functionSeats', 'functionSeats.seat']
     });
 
-    if (!func) {
-      throw new NotFoundException('Function not found');
-  }
+    if (!function_) {
+      throw new NotFoundException(`Function with ID ${id} not found`);
+    }
 
-    return func;
+    return function_;
   }
 
   async update(id: number, updateFunctionDto: UpdateFunctionDto): Promise<Function> {
-    const func = await this.findOne(id);
+    const function_ = await this.findOne(id);
     
-    // Si se actualiza el horario, verificar que no haya solapamiento
-    if (updateFunctionDto.startTime || updateFunctionDto.endTime) {
-      const startDate = updateFunctionDto.startTime ? new Date(updateFunctionDto.startTime) : func.startTime;
-      const endDate = updateFunctionDto.endTime ? new Date(updateFunctionDto.endTime) : func.endTime;
-
-      if (!startDate || !endDate) {
-        throw new BadRequestException('startTime y endTime son requeridos para verificar solapamiento');
-  }
-
-      const overlappingFunction = await this.functionRepository.findOne({
-        where: {
-          cinemaRoom: { id: func.cinemaRoom.id },
-          startTime: Between(startDate, endDate),
-          status: 'active',
-          id: Not(id) // Excluir la función actual
-        }
+    if (updateFunctionDto.movieId) {
+      const movie = await this.movieRepository.findOne({
+        where: { id: updateFunctionDto.movieId }
       });
-
-      if (overlappingFunction) {
-        throw new BadRequestException('There is already a function scheduled at this time in this cinema room');
+      if (!movie) {
+        throw new NotFoundException('Movie not found');
       }
+      function_.movie = movie;
     }
 
-    Object.assign(func, updateFunctionDto);
-    return this.functionRepository.save(func);
+    if (updateFunctionDto.cinemaRoomId) {
+      const cinemaRoom = await this.cinemaRoomRepository.findOne({
+        where: { id: updateFunctionDto.cinemaRoomId },
+        relations: ['seats']
+      });
+      if (!cinemaRoom) {
+        throw new NotFoundException('Cinema room not found');
+      }
+
+      // Si cambia la sala, crear nuevos asientos para la función
+      await this.functionSeatRepository.delete({ function: { id: function_.id } });
+      
+      const functionSeats = cinemaRoom.seats.map(seat => {
+        return this.functionSeatRepository.create({
+          function: function_,
+          seat: seat,
+        });
+      });
+
+      await this.functionSeatRepository.save(functionSeats);
+      function_.cinemaRoom = cinemaRoom;
+    }
+
+    // Actualizar otros campos
+    if (updateFunctionDto.startTime) {
+      function_.startTime = new Date(updateFunctionDto.startTime);
+    }
+    if (updateFunctionDto.endTime) {
+      function_.endTime = new Date(updateFunctionDto.endTime);
+    }
+    if (updateFunctionDto.price !== undefined) {
+      function_.price = updateFunctionDto.price;
+    }
+    if (updateFunctionDto.status) {
+      function_.status = updateFunctionDto.status;
+    }
+
+    return this.functionRepository.save(function_);
   }
 
   async remove(id: number): Promise<void> {
-    const func = await this.findOne(id);
-    func.status = 'cancelled';
-    await this.functionRepository.save(func);
+    const function_ = await this.findOne(id);
+    await this.functionRepository.remove(function_);
   }
 
   async findUpcoming(): Promise<Function[]> {
@@ -126,7 +173,7 @@ export class FunctionService {
         startTime: Between(now, new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)), // Próximos 30 días
         status: 'active'
       },
-      relations: ['movie', 'cinemaRoom'],
+      relations: ['movie', 'cinemaRoom', 'functionSeats', 'functionSeats.seat'],
       order: {
         startTime: 'ASC'
       }
@@ -141,7 +188,7 @@ export class FunctionService {
         startTime: Between(now, new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)), // Próximos 30 días
         status: 'active'
       },
-      relations: ['movie', 'cinemaRoom'],
+      relations: ['movie', 'cinemaRoom', 'functionSeats', 'functionSeats.seat'],
       order: {
         startTime: 'ASC'
       }

@@ -1,8 +1,8 @@
 import { Seat } from "../../seats/entities/seat.entity";
-import { Movie } from "../../movies/entities/movie.entity";
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Location } from "../../location/entities/location.entity";
 import { ApiProperty } from "@nestjs/swagger";
+import { Function } from "../../function/entities/function.entity";
 
 @Entity()
 export class CinemaRoom {
@@ -44,11 +44,11 @@ export class CinemaRoom {
     location: Location;
 
     @ApiProperty({
-        description: 'List of movies shown in this cinema room',
-        type: () => [Movie]
+        description: 'List of functions in this cinema room',
+        type: () => [Function]
     })
-    @OneToMany(() => Movie, (movie) => movie.cinemaRoom)
-    movies: Movie[];
+    @OneToMany(() => Function, (func) => func.cinemaRoom)
+    functions: Function[];
 
     @ApiProperty({
         description: 'List of seats in this cinema room',
@@ -56,7 +56,7 @@ export class CinemaRoom {
     })
     @OneToMany(() => Seat, seat => seat.cinemaRoom, {
         cascade: true, 
-        eager:true
+        eager: true
     })
     seats: Seat[];
 }

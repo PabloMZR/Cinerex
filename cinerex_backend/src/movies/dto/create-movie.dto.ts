@@ -1,4 +1,4 @@
-import { IsDateString, IsInt, IsISO8601, IsNotEmpty, IsString, Matches, Min } from "class-validator";
+import { IsDateString, IsInt, IsISO8601, IsNotEmpty, IsString, Matches, Min, IsNumber, IsOptional } from "class-validator";
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -25,32 +25,17 @@ export class CreateMovieDto {
         minimum: 1
     })
     @IsNotEmpty({message: "duration can't be empty"})
-    @IsInt({message: "duration must be a valid number of minutes"})
-    @Min(1,{message: "duration must be greater than zero"})
+    @IsNumber()
+    @Min(1)
     @Type(() => Number)
     duration: number;
-
-    @ApiProperty({
-        description: 'Start time of the movie in ISO8601 format',
-        example: '2024-01-01T20:00:00Z'
-    })
-    @IsNotEmpty({message: "startTime can't be empty"})
-    @IsISO8601()
-    startTime: string;
-
-    @ApiProperty({
-        description: 'ID of the cinema room where the movie will be shown',
-        example: 1
-    })
-    @IsNotEmpty({message: "cinemaRoomId can't be empty"})
-    @IsInt()
-    @Type(() => Number)
-    cinemaRoomId: number;
 
     @ApiProperty({
         description: 'URL of the movie poster image',
         example: '/uploads/movies/poster.jpg',
         required: false
     })
+    @IsString()
+    @IsOptional()
     posterUrl?: string;
 }
