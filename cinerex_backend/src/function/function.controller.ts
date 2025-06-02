@@ -24,6 +24,11 @@ export class FunctionController {
     return this.functionService.findUpcoming();
   }
 
+  @Get('movie/:movieId')
+  findByMovie(@Param('movieId', IdValidationPipe) movieId: string): Promise<Function[]> {
+    return this.functionService.findByMovie(+movieId);
+  }
+
   @Get(':id')
   findOne(@Param('id', IdValidationPipe) id: string): Promise<Function> {
     return this.functionService.findOne(+id);

@@ -4,8 +4,54 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CalendarDays, Clock, Film, MapPin, Star, Ticket } from 'lucide-react'
 import Link from "next/link"
+import { moviesApi } from "@/lib/api"
+import { MovieCarousel } from "@/components/MovieCarousel"
 
-export default function Home() {
+async function getMovies() {
+  try {
+    const movies = await moviesApi.getAll();
+    return movies;
+  } catch (error) {
+    console.error('Error al obtener películas:', error);
+    return [];
+  }
+}
+
+// Datos estáticos de próximos estrenos
+const proximosEstrenos = [
+  {
+    id: 5,
+    title: "Deadpool & Wolverine",
+    posterUrl: "/uploads/movies/deadpool.jpeg",
+    fechaEstreno: "26 Jul 2024",
+    genres: ["Acción", "Comedia", "Superhéroes"],
+  },
+  {
+    id: 6,
+    title: "Furiosa: Una Saga de Mad Max",
+    posterUrl: "/uploads/movies/furiosa.jpg",
+    fechaEstreno: "24 May 2024",
+    genres: ["Acción", "Aventura", "Post-apocalíptico"],
+  },
+  {
+    id: 7,
+    title: "Inside Out 2",
+    posterUrl: "/uploads/movies/insideout2.jpg",
+    fechaEstreno: "14 Jun 2024",
+    genres: ["Animación", "Comedia", "Familiar"],
+  },
+  {
+    id: 8,
+    title: "Alien: Romulus",
+    posterUrl: "/uploads/movies/alien.png",
+    fechaEstreno: "16 Ago 2024",
+    genres: ["Terror", "Ciencia Ficción", "Suspense"],
+  },
+]
+
+export default async function Home() {
+  const movies = await getMovies();
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -68,100 +114,11 @@ export default function Home() {
             </Link>
           </div>
 
-          <Tabs defaultValue="hoy" className="mb-8">
-            <TabsList className="mb-4">
-              <TabsTrigger value="hoy">Hoy</TabsTrigger>
-              <TabsTrigger value="manana">Mañana</TabsTrigger>
-              <TabsTrigger value="semana">Esta Semana</TabsTrigger>
-            </TabsList>
-            <TabsContent value="hoy" className="space-y-4">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {peliculas.map((pelicula) => (
-                  <Card key={pelicula.id} className="overflow-hidden">
-                    <div className="relative aspect-[2/3] overflow-hidden">
-                      <img
-                        src={pelicula.imagen || "/placeholder.svg"}
-                        alt={pelicula.titulo}
-                        className="object-cover w-full h-full transition-transform hover:scale-105"
-                      />
-                      <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-md flex items-center">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                        <span className="text-xs">{pelicula.calificacion}</span>
-                      </div>
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-2 line-clamp-1">{pelicula.titulo}</h3>
-                      <div className="flex items-center text-sm text-muted-foreground mb-2">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>{pelicula.duracion}</span>
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {pelicula.generos.map((genero) => (
-                          <span
-                            key={genero}
-                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                          >
-                            {genero}
-                          </span>
-                        ))}
-                      </div>
-                      <Button className="w-full bg-[#2911f1] hover:bg-[#3c1edf]" asChild>
-                        <Link href={`/pelicula/${pelicula.id}`}>Comprar Boletos</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="manana" className="space-y-4">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Contenido similar para mañana */}
-              </div>
-            </TabsContent>
-            <TabsContent value="semana" className="space-y-4">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Contenido similar para esta semana */}
-              </div>
-            </TabsContent>
-          </Tabs>
+          <MovieCarousel movies={movies} />
 
-          <div className="mb-8">
+          <div className="mt-16 mb-8">
             <h2 className="text-2xl font-bold tracking-tight mb-6">Próximos Estrenos</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {proximosEstrenos.map((pelicula) => (
-                <Card key={pelicula.id} className="overflow-hidden">
-                  <div className="relative aspect-[2/3] overflow-hidden">
-                    <img
-                      src={pelicula.imagen || "/placeholder.svg"}
-                      alt={pelicula.titulo}
-                      className="object-cover w-full h-full transition-transform hover:scale-105"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
-                      <div className="flex items-center text-white">
-                        <CalendarDays className="h-4 w-4 mr-2" />
-                        <span className="text-sm">{pelicula.fechaEstreno}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2 line-clamp-1">{pelicula.titulo}</h3>
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {pelicula.generos.map((genero) => (
-                        <span
-                          key={genero}
-                          className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold"
-                        >
-                          {genero}
-                        </span>
-                      ))}
-                    </div>
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link href={`/pelicula/${pelicula.id}`}>Ver Detalles</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <MovieCarousel movies={proximosEstrenos} isUpcoming />
           </div>
         </section>
       </main>
@@ -209,70 +166,3 @@ export default function Home() {
     </div>
   )
 }
-
-// Datos de ejemplo
-const peliculas = [
-  {
-    id: 1,
-    titulo: "Dune: Parte Dos",
-    imagen: "/placeholder.svg?height=450&width=300",
-    calificacion: "8.5",
-    duracion: "2h 46m",
-    generos: ["Ciencia Ficción", "Aventura"],
-  },
-  {
-    id: 2,
-    titulo: "Kung Fu Panda 4",
-    imagen: "/placeholder.svg?height=450&width=300",
-    calificacion: "7.8",
-    duracion: "1h 34m",
-    generos: ["Animación", "Comedia"],
-  },
-  {
-    id: 3,
-    titulo: "Godzilla x Kong: El Nuevo Imperio",
-    imagen: "/placeholder.svg?height=450&width=300",
-    calificacion: "7.2",
-    duracion: "1h 55m",
-    generos: ["Acción", "Ciencia Ficción"],
-  },
-  {
-    id: 4,
-    titulo: "Ghostbusters: Imperio Helado",
-    imagen: "/placeholder.svg?height=450&width=300",
-    calificacion: "7.0",
-    duracion: "1h 45m",
-    generos: ["Comedia", "Fantasía"],
-  },
-]
-
-const proximosEstrenos = [
-  {
-    id: 5,
-    titulo: "Deadpool & Wolverine",
-    imagen: "/placeholder.svg?height=450&width=300",
-    fechaEstreno: "26 Jul 2025",
-    generos: ["Acción", "Comedia"],
-  },
-  {
-    id: 6,
-    titulo: "Furiosa: Una Saga de Mad Max",
-    imagen: "/placeholder.svg?height=450&width=300",
-    fechaEstreno: "24 May 2025",
-    generos: ["Acción", "Aventura"],
-  },
-  {
-    id: 7,
-    titulo: "Inside Out 2",
-    imagen: "/placeholder.svg?height=450&width=300",
-    fechaEstreno: "14 Jun 2025",
-    generos: ["Animación", "Comedia"],
-  },
-  {
-    id: 8,
-    titulo: "Alien: Romulus",
-    imagen: "/placeholder.svg?height=450&width=300",
-    fechaEstreno: "16 Ago 2025",
-    generos: ["Terror", "Ciencia Ficción"],
-  },
-]

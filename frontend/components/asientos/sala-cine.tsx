@@ -6,16 +6,24 @@ import { motion } from "framer-motion"
 import { NumeracionSuperior } from "./numeracion-superior"
 import { FilaAsientos } from "./fila-asientos"
 import { Pantalla } from "./pantalla"
+import { salaLayouts } from "@/data/sala-layouts"
+import type { Seat } from "@/types"
 
 interface SalaCineProps {
-  filas: string[]
-  asientos: number[]
+  tipoSala: string
+  asientos: Seat[]
   asientosOcupados: string[]
   onAsientosSeleccionadosChange: (asientos: string[]) => void
 }
 
-export function SalaCine({ filas, asientos, asientosOcupados, onAsientosSeleccionadosChange }: SalaCineProps) {
+export function SalaCine({ tipoSala, asientos, asientosOcupados, onAsientosSeleccionadosChange }: SalaCineProps) {
   const [asientosSeleccionados, setAsientosSeleccionados] = useState<string[]>([])
+  
+  // Obtener el layout según el tipo de sala
+  const layout = salaLayouts[tipoSala] || salaLayouts["Estándar"]
+  
+  // Generar array de números de asientos
+  const numerosAsientos = Array.from({ length: layout.asientosPorFila }, (_, i) => i + 1)
 
   // Maneja la selección/deselección de asientos
   const toggleAsiento = (asientoId: string) => {
@@ -44,7 +52,7 @@ export function SalaCine({ filas, asientos, asientosOcupados, onAsientosSeleccio
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto mb-12 relative">
+    <div className="w-full max-w-4xl mx-auto mb-12 relative">
       {/* Pantalla del cine */}
       <Pantalla />
 
@@ -56,14 +64,15 @@ export function SalaCine({ filas, asientos, asientosOcupados, onAsientosSeleccio
         animate="show"
       >
         {/* Numeración de asientos en la parte superior */}
-        <NumeracionSuperior asientos={asientos} />
+        <NumeracionSuperior asientos={numerosAsientos} espacios={layout.espacios} />
 
         {/* Filas de asientos */}
-        {filas.map((fila, filaIndex) => (
+        {layout.filas.map((fila, filaIndex) => (
           <FilaAsientos
             key={fila}
             fila={fila}
-            asientos={asientos}
+            asientos={numerosAsientos}
+            espacios={layout.espacios}
             filaIndex={filaIndex}
             asientosSeleccionados={asientosSeleccionados}
             asientosOcupados={asientosOcupados}

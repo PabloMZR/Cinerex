@@ -138,7 +138,17 @@ export const moviesApi = {
     const response = await axios.get<Movie[]>(`${API_URL}/movies`);
     return response.data;
   },
-  getOne: (id: number) => api.get<Movie>(`/movies/${id}`),
+  getOne: async (id: number) => {
+    try {
+      console.log('Fetching movie with ID:', id)
+      const response = await axios.get<Movie>(`${API_URL}/movies/${id}`)
+      console.log('Movie data received:', response.data)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching movie:', error)
+      throw error
+    }
+  },
   create: (data: CreateMovieDto | FormData) => api.post<Movie>('/movies', data),
   update: (id: number, data: Partial<Movie> | FormData) => {
     if (data instanceof FormData) {
@@ -171,52 +181,111 @@ export const seatsApi = {
 
 export const functionsApi = {
   getAll: async (): Promise<Function[]> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/function`);
-    if (!response.ok) throw new Error('Error al obtener las funciones');
-    return response.json();
+    try {
+      console.log('Fetching all functions')
+      const response = await fetch(`${API_URL}/function`)
+      if (!response.ok) {
+        throw new Error(`Error fetching functions: ${response.statusText}`)
+      }
+      const data = await response.json()
+      console.log('Functions data received:', data)
+      return data
+    } catch (error) {
+      console.error('Error in getAll functions:', error)
+      throw error
+    }
   },
 
   getUpcoming: async (): Promise<Function[]> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/function/upcoming`);
-    if (!response.ok) throw new Error('Error al obtener las próximas funciones');
-    return response.json();
+    try {
+      console.log('Fetching upcoming functions')
+      const response = await fetch(`${API_URL}/function/upcoming`)
+      if (!response.ok) {
+        throw new Error(`Error fetching upcoming functions: ${response.statusText}`)
+      }
+      const data = await response.json()
+      console.log('Upcoming functions data received:', data)
+      return data
+    } catch (error) {
+      console.error('Error in getUpcoming functions:', error)
+      throw error
+    }
   },
 
   getOne: async (id: number): Promise<Function> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/function/${id}`);
-    if (!response.ok) throw new Error('Error al obtener la función');
-    return response.json();
+    try {
+      console.log('Fetching function with ID:', id)
+      const response = await fetch(`${API_URL}/function/${id}`)
+      if (!response.ok) {
+        throw new Error(`Error fetching function: ${response.statusText}`)
+      }
+      const data = await response.json()
+      console.log('Function data received:', data)
+      return data
+    } catch (error) {
+      console.error('Error in getOne function:', error)
+      throw error
+    }
   },
 
   create: async (data: CreateFunctionDto): Promise<Function> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/function`, {
+    try {
+      console.log('Creating function with data:', data)
+      const response = await fetch(`${API_URL}/function`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Error al crear la función');
-    return response.json();
+      })
+      if (!response.ok) {
+        throw new Error(`Error creating function: ${response.statusText}`)
+      }
+      const result = await response.json()
+      console.log('Function created:', result)
+      return result
+    } catch (error) {
+      console.error('Error in create function:', error)
+      throw error
+    }
   },
 
   update: async (id: number, data: UpdateFunctionDto): Promise<Function> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/function/${id}`, {
+    try {
+      console.log('Updating function with ID:', id, 'Data:', data)
+      const response = await fetch(`${API_URL}/function/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Error al actualizar la función');
-    return response.json();
+      })
+      if (!response.ok) {
+        throw new Error(`Error updating function: ${response.statusText}`)
+      }
+      const result = await response.json()
+      console.log('Function updated:', result)
+      return result
+    } catch (error) {
+      console.error('Error in update function:', error)
+      throw error
+    }
   },
 
   remove: async (id: number): Promise<void> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/function/${id}`, {
+    try {
+      console.log('Removing function with ID:', id)
+      const response = await fetch(`${API_URL}/function/${id}`, {
       method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Error al eliminar la función');
+      })
+      if (!response.ok) {
+        throw new Error(`Error removing function: ${response.statusText}`)
+      }
+      console.log('Function removed successfully')
+    } catch (error) {
+      console.error('Error in remove function:', error)
+      throw error
+    }
   },
 };
 

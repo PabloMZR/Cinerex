@@ -48,13 +48,15 @@ export interface Location {
 export interface Movie {
   id: number;
   title: string;
-  description?: string;
+  description: string;
   duration: number;
   startTime: string;
   posterUrl?: string;
+  cinemaRoomId: number;
+  cinemaRoom?: CinemaRoom;
   rating?: string;
   genres?: string[];
-  cinemaRoom?: CinemaRoom;
+  fechaEstreno?: string; // Para próximos estrenos
 }
 
 export interface CinemaRoom {
