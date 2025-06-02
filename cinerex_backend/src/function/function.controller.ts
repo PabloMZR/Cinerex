@@ -33,6 +33,11 @@ export class FunctionController {
     return this.functionService.findUpcoming();
   }
 
+  @Get('movie/:movieId')
+  findByMovie(@Param('movieId', IdValidationPipe) movieId: string): Promise<Function[]> {
+    return this.functionService.findByMovie(+movieId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a function by id' })
   @ApiResponse({ status: 200, description: 'Return the function.' })

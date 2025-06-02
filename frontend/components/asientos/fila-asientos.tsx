@@ -9,6 +9,7 @@ import type { EstadoAsiento } from "@/types"
 interface FilaAsientosProps {
   fila: string
   asientos: number[]
+  espacios?: number[]
   filaIndex: number
   asientosSeleccionados: string[]
   asientosOcupados: string[]
@@ -18,6 +19,7 @@ interface FilaAsientosProps {
 export function FilaAsientos({
   fila,
   asientos,
+  espacios = [],
   filaIndex,
   asientosSeleccionados,
   asientosOcupados,
@@ -54,48 +56,36 @@ export function FilaAsientos({
 
   return (
     <motion.div
-      variants={rowVariants}
-      className={`flex items-center mb-3 justify-center w-full`}
-      style={{
-        transform: getEscala(),
-        transformOrigin: "center bottom",
-      }}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.1 * filaIndex }}
+      className="flex items-center justify-center mb-4"
     >
-      {/* Etiqueta de fila izquierda */}
-      <motion.div
-        whileHover={{ scale: 1.2, color: "#2911f1" }}
-        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        className="w-6 h-6 flex items-center justify-center text-xs font-medium text-gray-500"
-      >
+      {/* Etiqueta de fila */}
+      <div className="w-8 text-center text-sm font-medium text-gray-500">
         {fila}
-      </motion.div>
-
-      {/* Asientos */}
-      <div className="flex gap-1 justify-center">
-        {asientos.map((asiento, index) => {
-          const asientoId = `${fila}${asiento}`
-          const estado = getEstadoAsiento(asientoId)
-
-          // Pasillo central
-          const isPasilloCentral = index === 4 || index === 5
-
-          return (
-            <React.Fragment key={`asiento-${asientoId}`}>
-              {isPasilloCentral && <div className="w-4"></div>}
-              <Asiento id={asientoId} fila={fila} numero={asiento} estado={estado} onClick={onToggleAsiento} />
-            </React.Fragment>
-          )
-        })}
       </div>
 
-      {/* Etiqueta de fila derecha */}
-      <motion.div
-        whileHover={{ scale: 1.2, color: "#2911f1" }}
-        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        className="w-6 h-6 flex items-center justify-center text-xs font-medium text-gray-500"
-      >
+      {/* Asientos */}
+      <div className="flex">
+        {asientos.map((numero) => (
+          <>
+            <Asiento
+              key={`${fila}${numero}`}
+              id={`${fila}${numero}`}
+              seleccionado={asientosSeleccionados.includes(`${fila}${numero}`)}
+              ocupado={asientosOcupados.includes(`${fila}${numero}`)}
+              onClick={() => onToggleAsiento(`${fila}${numero}`)}
+            />
+            {espacios?.includes(numero) && <div className="w-4" />}
+          </>
+        ))}
+      </div>
+
+      {/* Etiqueta de fila (derecha) */}
+      <div className="w-8 text-center text-sm font-medium text-gray-500">
         {fila}
-      </motion.div>
+      </div>
     </motion.div>
   )
 }

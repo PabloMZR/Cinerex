@@ -132,4 +132,19 @@ export class FunctionService {
       }
     });
   }
+
+  async findByMovie(movieId: number): Promise<Function[]> {
+    const now = new Date();
+    return this.functionRepository.find({
+      where: {
+        movie: { id: movieId },
+        startTime: Between(now, new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)), // Próximos 30 días
+        status: 'active'
+      },
+      relations: ['movie', 'cinemaRoom'],
+      order: {
+        startTime: 'ASC'
+      }
+    });
+  }
 }

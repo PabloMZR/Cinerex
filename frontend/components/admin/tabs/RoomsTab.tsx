@@ -93,7 +93,7 @@ export function RoomsTab({ rooms }: RoomsTabProps) {
       setIsLoading(true)
       // Consultar si hay películas asociadas a la sala
       const movies = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/movies/by-cinema-room/${id}`).then(r => r.json())
-      console.log("Películas asociadas a la sala:", movies)
+      console.log( movies)
       if (movies && movies.length > 0) {
         // Redirigir a la edición de la película asignada
         toast.error(`Esta sala tiene la película "${movies[0].title || movies[0].name}" asignada. Debes reasignar la película a otra sala antes de eliminar.`)
